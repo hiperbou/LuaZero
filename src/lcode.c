@@ -540,7 +540,11 @@ void luaK_goiftrue (FuncState *fs, expdesc *e) {
   int pc;  /* pc of last jump */
   luaK_dischargevars(fs, e);
   switch (e->k) {
-    case VK: case VKNUM: case VTRUE: {
+  #if defined(LUA_EXT_ZERO_IS_FALSE)
+      case VTRUE: {
+  #else
+       case VK: case VKNUM: case VTRUE: {
+  #endif
       pc = NO_JUMP;  /* always true; do nothing */
       break;
     }

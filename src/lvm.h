@@ -18,10 +18,15 @@
 #define tonumber(o,n)	(ttype(o) == LUA_TNUMBER || \
                          (((o) = luaV_tonumber(o,n)) != NULL))
 
-#define equalobj(L,o1,o2) \
-	(ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2))
+
+#if defined(LUA_EXT_ZERO_IS_FALSE)
+#define equalobj(L,o1,o2)  ((ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2)) || luaV_equalbool_(o1, o2))
+#else
+ #define equalobj(L,o1,o2)  ((ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2))
+#endif
 
 
+LUAI_FUNC int luaV_equalbool_ (const TValue *t1, const TValue *t2);
 LUAI_FUNC int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
 LUAI_FUNC int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2);
 LUAI_FUNC const TValue *luaV_tonumber (const TValue *obj, TValue *n);
