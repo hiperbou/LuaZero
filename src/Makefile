@@ -7,16 +7,22 @@
 # Your platform. See PLATS for possible values.
 PLAT= none
 
-CC= gcc
-CFLAGS= -O2 -Wall $(MYCFLAGS)
-AR= ar rcu
-RANLIB= ranlib
-RM= rm -f
+# XXX EMSCRIPTEN - comment out several lines here, to pick them up from the environment
+#CC= gcc 
+#CFLAGS = -O2 ...
+CFLAGS=   -Wall $(MYCFLAGS)
+
+#AR= ar rcu
+#RANLIB= ranlib
+#RM= rm -f
 LIBS= -lm $(MYLIBS)
 
 MYCFLAGS=
 MYLDFLAGS=
 MYLIBS=
+
+# XXX EMSCRIPTEN - add this
+AR_ARGS=rcu
 
 # == END OF USER SETTINGS. NO NEED TO CHANGE ANYTHING BELOW THIS LINE =========
 
@@ -47,8 +53,9 @@ o:	$(ALL_O)
 
 a:	$(ALL_A)
 
+# XXX EMSCRIPTEN: add AR_ARGS
 $(LUA_A): $(CORE_O) $(LIB_O)
-	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
+	$(AR) $(AR_ARGS) $@ $(CORE_O) $(LIB_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
