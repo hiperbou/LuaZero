@@ -17,7 +17,7 @@
 ** Search for "@@" to find all configurable definitions.
 ** ===================================================================
 */
-
+#define LUA_EXT_ZERO_IS_FALSE    /* Numeric '0' is false like nil and false */
 
 /*
 @@ LUA_ANSI controls the use of non-ansi features.
