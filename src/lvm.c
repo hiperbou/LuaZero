@@ -252,6 +252,19 @@ static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
 }
 
 
+/*
+** equality of Boolean values (for zero is false patch)
+*/
+#if defined(LUA_EXT_ZERO_IS_FALSE)
+int luaV_equalbool_ (const TValue *t1, const TValue *t2) {
+  if (ttype(t1) == LUA_TNUMBER && ttype(t2) == LUA_TBOOLEAN)
+    return (nvalue(t1) != 0) == bvalue(t2);
+  else if (ttype(t1) == LUA_TBOOLEAN && ttype(t2) == LUA_TNUMBER)
+    return (bvalue(t1) == (nvalue(t2) != 0));
+  return 0;
+}
+#endif
+
 int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2) {
   const TValue *tm;
   lua_assert(ttype(t1) == ttype(t2));
