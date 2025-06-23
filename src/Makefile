@@ -119,7 +119,7 @@ solaris:
 .PHONY: all $(PLATS) default o a clean depend echo none
 
 wasm:
-	$(MAKE) all CC=emcc AR="emar rcu" RANLIB=emar \
+	$(MAKE) all CC=emcc AR="emar rcs" RANLIB=emar \
 	MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN=0 -DLUA_USE_READLINE=0" \
 	LUA_T=lua.js LUAC_T=luac.js \
 	LIBS="-s WASM=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s USE_ES6_IMPORT_META=0 -s EXPORTED_RUNTIME_METHODS=['FS','callMain'] --embed-file test@/test"
