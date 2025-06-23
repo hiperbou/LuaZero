@@ -89,7 +89,7 @@ $(LUAC_T)-shared: $(LUAC_O) $(LUA_SO)
 
 clean:
 	$(RM) $(ALL_T) $(ALL_O) $(ALL_SO) $(CORE_SO_O) $(LIB_SO_O) \
-	$(LUA_T)-static $(LUAC_T)-static
+	$(LUA_T)-static $(LUAC_T)-static lua-static.exe luac-static.exe
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c print.c
@@ -148,8 +148,20 @@ posix:
 solaris:
 	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-ldl"
 
+# Target for building static lua.exe and luac.exe with MinGW
+# Ensures .o files are compiled without -DLUA_BUILD_AS_DLL
+mingw-static: clean_o # Clean previous .o files to ensure they are not DLL-compiled ones
+	$(MAKE) LUA_T=lua-static.exe LUAC_T=luac-static.exe \
+	  MYLDFLAGS="-s -static" \
+	  MYLIBS="-lws2_32 -luser32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lodbc32 -lodbccp32 -lcomctl32 -lrpcrt4 -lbcrypt" \
+	  all
+
 # list targets that do not create files (but not all makes understand .PHONY)
-.PHONY: all $(PLATS) default o a clean depend echo none
+.PHONY: all $(PLATS) default o a clean depend echo none mingw-static clean_o
+
+# Rule to clean only object files
+clean_o:
+	$(RM) $(ALL_O) $(CORE_SO_O) $(LIB_SO_O)
 
 # DO NOT DELETE
 
