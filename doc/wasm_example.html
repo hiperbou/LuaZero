@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lua WASM Example</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        #output { white-space: pre-wrap; background-color: #fff; border: 1px solid #ddd; padding: 15px; margin-top: 20px; min-height: 100px; font-family: monospace; }
+        textarea { width: 100%; box-sizing: border-box; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; min-height: 150px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        h1, h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>Lua WASM Example</h1>
+
+    <p>This page demonstrates running Lua code using a WebAssembly build of the Lua interpreter.</p>
+
+    <h2>Enter Lua Code:</h2>
+    <textarea id="luaCode">
+-- Example Lua code
+function greet(name)
+  return "Hello, " .. name .. " from Lua!"
+end
+
+io.write(greet("WebAssembly User"))
+io.write("\n")
+io.write("2 + 2 = " .. (2 + 2) .. "\n")
+
+-- Accessing embedded test files (if lua.js was built with test directory embedded)
+-- Example: Print content of test/hello.lua
+local f = io.open("/test/hello.lua", "r")
+if f then
+    io.write("\n--- Contents of /test/hello.lua ---\n")
+    io.write(f:read("*a"))
+    f:close()
+else
+    io.write("\nCould not open /test/hello.lua. Ensure it was embedded.\n")
+end
+    </textarea>
+    <button onclick="runLua()">Run Lua Code</button>
+
+    <h2>Output:</h2>
+    <div id="output"></div>
+
+    <script type="module">
+        // Ensure this path points to where your lua.js will be served.
+        // If this HTML is in doc/ and lua.js is in src/, you might need '../src/lua.js'
+        // Or, adjust based on how artifacts are deployed. For local testing, place lua.js next to this html.
+        import createLuaModule from './lua.js';
+
+        let luaModule;
+        const outputElement = document.getElementById('output');
+
+        // Pre-run function to capture stdout and stderr
+        function preRun() {
+            if (FS.virtualFS_initialized === undefined) {
+                FS.init(
+                    function() { /* stdin */ return null; },
+                    function(char) { /* stdout */ if (char !== null) outputElement.textContent += String.fromCharCode(char); },
+                    function(char) { /* stderr */ if (char !== null) outputElement.textContent += String.fromCharCode(char); }
+                );
+                FS.virtualFS_initialized = true;
+            }
+        }
+
+        async function initLuaModule() {
+            outputElement.textContent = 'Initializing Lua WASM module...\n';
+            try {
+                luaModule = await createLuaModule({
+                    preRun: [preRun], // Initialize FS and redirect stdio before main
+                    print: (text) => { outputElement.textContent += text + "\n"; },
+                    printErr: (text) => { outputElement.textContent += "ERR: " + text + "\n"; },
+                    onRuntimeInitialized: () => {
+                        outputElement.textContent += 'Lua WASM Runtime Initialized.\nReady to run code.\n';
+                    }
+                });
+                // Ensure FS is initialized for direct FS operations if preRun didn't cover it.
+                // This is a bit redundant if preRun works as expected but good as a fallback.
+                if (!FS.virtualFS_initialized && luaModule.FS) {
+                     FS.init( () => null, (c) => outputElement.textContent += String.fromCharCode(c), (c) => outputElement.textContent += String.fromCharCode(c));
+                     FS.virtualFS_initialized = true;
+                }
+
+            } catch (err) {
+                outputElement.textContent += 'Error initializing Lua WASM module: ' + err + '\n';
+                console.error(err);
+            }
+        }
+
+        window.runLua = async function() {
+            if (!luaModule) {
+                outputElement.textContent = 'Lua module not initialized yet.\n';
+                return;
+            }
+
+            const luaCode = document.getElementById('luaCode').value;
+            outputElement.textContent = ''; // Clear previous output
+
+            try {
+                // Write the Lua code to a temporary file in the virtual FS
+                const scriptPath = "/script.lua";
+                luaModule.FS.writeFile(scriptPath, luaCode);
+
+                // Use callMain to execute the Lua interpreter with the script
+                // preRun should have already set up stdout/stderr redirection
+                luaModule.callMain([scriptPath]);
+
+            } catch (e) {
+                outputElement.textContent += 'Error running Lua code: ' + e + '\n';
+                console.error(e);
+            } finally {
+                // Clean up the temporary script file (optional)
+                // if (luaModule.FS.analyzePath(scriptPath).exists) {
+                //    luaModule.FS.unlink(scriptPath);
+                // }
+            }
+        };
+
+        // Initialize the module when the page loads
+        initLuaModule();
+    </script>
+</body>
+</html>

@@ -20,18 +20,14 @@ MYLIBS=
 
 # == END OF USER SETTINGS. NO NEED TO CHANGE ANYTHING BELOW THIS LINE =========
 
-PLATS= aix ansi bsd freebsd generic linux macosx mingw posix solaris
+PLATS= aix ansi bsd freebsd generic linux macosx mingw posix solaris wasm
 
 LUA_A=	liblua.a
-LUA_SO= liblua.so
 CORE_O=	lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o \
 	lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o  \
 	lundump.o lvm.o lzio.o
 LIB_O=	lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o \
 	lstrlib.o loadlib.o linit.o
-CORE_SO_O= $(CORE_O:.o=.so.o)
-LIB_SO_O= $(LIB_O:.o=.so.o)
-
 
 LUA_T=	lua
 LUA_O=	lua.o
@@ -42,7 +38,6 @@ LUAC_O=	luac.o print.o
 ALL_O= $(CORE_O) $(LIB_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
-ALL_SO= $(LUA_SO) $(LUA_T)-shared $(LUAC_T)-shared
 
 default: $(PLAT)
 
@@ -52,44 +47,18 @@ o:	$(ALL_O)
 
 a:	$(ALL_A)
 
-so: $(ALL_SO)
-
 $(LUA_A): $(CORE_O) $(LIB_O)
-	$(AR) $@ $(CORE_O) $(LIB_O)
+	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
 	$(RANLIB) $@
-
-# Rule to build .so.o files from .c files
-%.so.o: %.c
-	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
-
-$(LUA_SO): $(CORE_SO_O) $(LIB_SO_O)
-	$(CC) -shared -o $@ $(MYLDFLAGS) $(CORE_SO_O) $(LIB_SO_O) $(LIBS)
 
 $(LUA_T): $(LUA_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
 
-# Target for lua linked with static libraries (for readline etc)
-$(LUA_T)-static: $(LUA_O) $(LUA_A)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS) -static
-
 $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
 
-# Target for luac linked with static libraries
-$(LUAC_T)-static: $(LUAC_O) $(LUA_A)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) -static
-
-# Targets for lua and luac linked against liblua.so
-$(LUA_T)-shared: $(LUA_O) $(LUA_SO)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) -L. -llua $(LIBS)
-
-$(LUAC_T)-shared: $(LUAC_O) $(LUA_SO)
-	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) -L. -llua $(LIBS)
-
-
 clean:
-	$(RM) $(ALL_T) $(ALL_O) $(ALL_SO) $(CORE_SO_O) $(LIB_SO_O) \
-	$(LUA_T)-static $(LUAC_T)-static lua-static.exe luac-static.exe
+	$(RM) $(ALL_T) $(ALL_O)
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c print.c
@@ -135,20 +104,10 @@ macosx:
 #	$(MAKE) all MYCFLAGS=-DLUA_USE_MACOSX
 
 mingw:
-	$(MAKE) "LUA_A=lua51.dll" "AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
-	  "MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLIBS=" lua51.dll
 	$(MAKE) "LUA_A=lua51.dll" "LUA_T=lua.exe" \
-	  "MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLDFLAGS=-s" lua.exe
-	$(MAKE) "LUA_A=lua51.dll" "LUAC_T=luac.exe" \
-	  "MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLDFLAGS=-s" luac.exe
-
-# Target for building static lua and luac on Linux
-linux-static:
-	$(MAKE) LUA_T=lua-static LUAC_T=luac-static \
-	  CFLAGS="$(CFLAGS) -DLUA_USE_LINUX" \
-	  MYLDFLAGS="-static" \
-	  MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses -ltinfo" \
-	  lua-static luac-static
+	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
+	"MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLIBS=" "MYLDFLAGS=-s" lua.exe
+	$(MAKE) "LUAC_T=luac.exe" luac.exe
 
 posix:
 	$(MAKE) all MYCFLAGS=-DLUA_USE_POSIX
@@ -156,20 +115,14 @@ posix:
 solaris:
 	$(MAKE) all MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN" MYLIBS="-ldl"
 
-# Target for building static lua.exe and luac.exe with MinGW
-# Ensures .o files are compiled without -DLUA_BUILD_AS_DLL
-mingw-static: clean_o # Clean previous .o files to ensure they are not DLL-compiled ones
-	$(MAKE) LUA_T=lua-static.exe LUAC_T=luac-static.exe \
-	  MYLDFLAGS="-s -static" \
-	  MYLIBS="-lws2_32 -luser32 -lgdi32 -lwinspool -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lodbc32 -lodbccp32 -lcomctl32 -lrpcrt4 -lbcrypt" \
-	  all
-
 # list targets that do not create files (but not all makes understand .PHONY)
-.PHONY: all $(PLATS) default o a clean depend echo none mingw-static clean_o
+.PHONY: all $(PLATS) default o a clean depend echo none
 
-# Rule to clean only object files
-clean_o:
-	$(RM) $(ALL_O) $(CORE_SO_O) $(LIB_SO_O)
+wasm:
+	$(MAKE) all CC=emcc AR="emar rcu" RANLIB=emar \
+	MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN=0 -DLUA_USE_READLINE=0" \
+	LUA_T=lua.js LUAC_T=luac.js \
+	LIBS="-s WASM=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s USE_ES6_IMPORT_META=0 -s EXPORTED_RUNTIME_METHODS=['FS','callMain'] --embed-file test@/test"
 
 # DO NOT DELETE
 

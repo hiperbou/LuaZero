@@ -44,6 +44,15 @@
 #define LUA_DL_DYLD		/* does not need extra library */
 #endif
 
+/* Settings for Emscripten (WebAssembly) */
+#if defined(__EMSCRIPTEN__)
+#ifndef LUA_USE_POSIX
+#define LUA_USE_POSIX /* Emscripten provides good POSIX compatibility */
+#endif
+#undef LUA_USE_POPEN /* popen is not available in WASM */
+#undef LUA_USE_DLOPEN /* dlopen is not standard in WASM */
+#endif
+
 
 
 /*
