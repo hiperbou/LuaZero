@@ -47,9 +47,16 @@ o:	$(ALL_O)
 
 a:	$(ALL_A)
 
+ifeq ($(CC),emcc)
+$(LUA_A): $(CORE_O) $(LIB_O)
+	@echo "Building $(LUA_A) for WASM using: emar rcs $@"
+	$(RM) $@
+	emar rcs $@ $(CORE_O) $(LIB_O)
+else
 $(LUA_A): $(CORE_O) $(LIB_O)
 	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
 	$(RANLIB) $@
+endif
 
 $(LUA_T): $(LUA_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
@@ -119,7 +126,7 @@ solaris:
 .PHONY: all $(PLATS) default o a clean depend echo none
 
 wasm:
-	$(MAKE) all CC=emcc AR="emar rcs" RANLIB=emar \
+	$(MAKE) all CC=emcc \
 	MYCFLAGS="-DLUA_USE_POSIX -DLUA_USE_DLOPEN=0 -DLUA_USE_READLINE=0" \
 	LUA_T=lua.js LUAC_T=luac.js \
 	LIBS="-s WASM=1 -s MODULARIZE=1 -s EXPORT_ES6=1 -s USE_ES6_IMPORT_META=0 -s EXPORTED_RUNTIME_METHODS=['FS','callMain'] --embed-file test@/test"
