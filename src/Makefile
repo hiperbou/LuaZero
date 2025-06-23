@@ -142,6 +142,14 @@ mingw:
 	$(MAKE) "LUA_A=lua51.dll" "LUAC_T=luac.exe" \
 	  "MYCFLAGS=-DLUA_BUILD_AS_DLL" "MYLDFLAGS=-s" luac.exe
 
+# Target for building static lua and luac on Linux
+linux-static:
+	$(MAKE) LUA_T=lua-static LUAC_T=luac-static \
+	  CFLAGS="$(CFLAGS) -DLUA_USE_LINUX" \
+	  MYLDFLAGS="-static" \
+	  MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses -ltinfo" \
+	  lua-static luac-static
+
 posix:
 	$(MAKE) all MYCFLAGS=-DLUA_USE_POSIX
 

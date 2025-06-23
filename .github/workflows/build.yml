@@ -15,14 +15,17 @@ jobs:
       - name: Build Linux binaries (static, shared lib, and lua/luac linked with shared lib)
         run: |
           cd src
-          # Default build (dynamic system libs, static liblua.a)
-          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses"
-          # Static build (attempt to link system libs statically, requires tinfo)
-          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses -ltinfo" LUA_T=lua-static LUAC_T=luac-static MYLDFLAGS="-static" all
-          # Shared library liblua.so
-          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses" so
+          # Default build (dynamic system libs, liblua.a with fPIC objects, lua, luac)
+          # The 'linux' target in Makefile sets its own MYCFLAGS and MYLIBS. We add -fPIC to CFLAGS.
+          make linux CFLAGS="$(CFLAGS) -fPIC"
+          # Static build (lua-static, luac-static using liblua.a from above)
+          # The 'linux-static' target in Makefile sets necessary CFLAGS, MYLDFLAGS, and MYLIBS.
+          make linux-static
+          # Shared library liblua.so (uses fPIC objects from liblua.a or rebuilds .so.o)
+          # We ensure -fPIC is used for objects that go into .so.
+          make linux CFLAGS="$(CFLAGS) -fPIC" so
           # Binaries linked against liblua.so
-          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses" LUA_T=lua-shared LUAC_T=luac-shared all
+          make linux CFLAGS="$(CFLAGS) -fPIC" LUA_T=lua-shared LUAC_T=luac-shared all
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
