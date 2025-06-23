@@ -15,9 +15,13 @@ jobs:
       - name: Build Linux binaries (static, shared lib, and lua/luac linked with shared lib)
         run: |
           cd src
+          # Default build (dynamic system libs, static liblua.a)
           make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses"
-          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses" LUA_T=lua-static LUAC_T=luac-static MYLDFLAGS="-static" all
+          # Static build (attempt to link system libs statically, requires tinfo)
+          make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses -ltinfo" LUA_T=lua-static LUAC_T=luac-static MYLDFLAGS="-static" all
+          # Shared library liblua.so
           make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses" so
+          # Binaries linked against liblua.so
           make linux MYCFLAGS="-DLUA_USE_LINUX -fPIC" MYLIBS="-Wl,-E -ldl -lreadline -lhistory -lncurses" LUA_T=lua-shared LUAC_T=luac-shared all
 
       - name: Upload Linux artifacts
@@ -57,3 +61,4 @@ jobs:
           path: |
             src/lua.exe
             src/luac.exe
+            src/lua51.dll
