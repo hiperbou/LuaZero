@@ -17,7 +17,7 @@ jobs:
       - name: Build WASM targets
         shell: bash
         run: |
-          source ./emsdk_env.sh
+          source $EMSDK/emsdk_env.sh
           cd src
           make wasm
 
