@@ -9,10 +9,12 @@ PLAT= none
 
 # XXX EMSCRIPTEN - comment out several lines here, to pick them up from the environment
 #CC= gcc 
+CC= emcc 
 #CFLAGS = -O2 ...
 CFLAGS=   -Wall $(MYCFLAGS)
 
 #AR= ar rcu
+AR= emar
 #RANLIB= ranlib
 #RM= rm -f
 LIBS= -lm $(MYLIBS)
