@@ -15,7 +15,7 @@ jobs:
           make linux
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lua-linux
           path: |
@@ -39,7 +39,7 @@ jobs:
           make mingw
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lua-windows
           path: |
