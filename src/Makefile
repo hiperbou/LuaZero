@@ -23,11 +23,15 @@ MYLIBS=
 PLATS= aix ansi bsd freebsd generic linux macosx mingw posix solaris
 
 LUA_A=	liblua.a
+LUA_SO= liblua.so
 CORE_O=	lapi.o lcode.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o lmem.o \
 	lobject.o lopcodes.o lparser.o lstate.o lstring.o ltable.o ltm.o  \
 	lundump.o lvm.o lzio.o
 LIB_O=	lauxlib.o lbaselib.o ldblib.o liolib.o lmathlib.o loslib.o ltablib.o \
 	lstrlib.o loadlib.o linit.o
+CORE_SO_O= $(CORE_O:.o=.so.o)
+LIB_SO_O= $(LIB_O:.o=.so.o)
+
 
 LUA_T=	lua
 LUA_O=	lua.o
@@ -38,6 +42,7 @@ LUAC_O=	luac.o print.o
 ALL_O= $(CORE_O) $(LIB_O) $(LUA_O) $(LUAC_O)
 ALL_T= $(LUA_A) $(LUA_T) $(LUAC_T)
 ALL_A= $(LUA_A)
+ALL_SO= $(LUA_SO) $(LUA_T)-shared $(LUAC_T)-shared
 
 default: $(PLAT)
 
@@ -47,18 +52,44 @@ o:	$(ALL_O)
 
 a:	$(ALL_A)
 
+so: $(ALL_SO)
+
 $(LUA_A): $(CORE_O) $(LIB_O)
-	$(AR) $@ $(CORE_O) $(LIB_O)	# DLL needs all object files
+	$(AR) $@ $(CORE_O) $(LIB_O)
 	$(RANLIB) $@
+
+# Rule to build .so.o files from .c files
+%.so.o: %.c
+	$(CC) $(CFLAGS) -fPIC -c -o $@ $<
+
+$(LUA_SO): $(CORE_SO_O) $(LIB_SO_O)
+	$(CC) -shared -o $@ $(MYLDFLAGS) $(CORE_SO_O) $(LIB_SO_O) $(LIBS)
 
 $(LUA_T): $(LUA_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
 
+# Target for lua linked with static libraries (for readline etc)
+$(LUA_T)-static: $(LUA_O) $(LUA_A)
+	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) $(LUA_A) $(LIBS) -static
+
 $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
 
+# Target for luac linked with static libraries
+$(LUAC_T)-static: $(LUAC_O) $(LUA_A)
+	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) -static
+
+# Targets for lua and luac linked against liblua.so
+$(LUA_T)-shared: $(LUA_O) $(LUA_SO)
+	$(CC) -o $@ $(MYLDFLAGS) $(LUA_O) -L. -llua $(LIBS)
+
+$(LUAC_T)-shared: $(LUAC_O) $(LUA_SO)
+	$(CC) -o $@ $(MYLDFLAGS) $(LUAC_O) -L. -llua $(LIBS)
+
+
 clean:
-	$(RM) $(ALL_T) $(ALL_O)
+	$(RM) $(ALL_T) $(ALL_O) $(ALL_SO) $(CORE_SO_O) $(LIB_SO_O) \
+	$(LUA_T)-static $(LUAC_T)-static
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c print.c
