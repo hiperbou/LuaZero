@@ -16,4 +16,5 @@ emcc --version
 
 cd src
 make generic
+make generic
 cp liblua.a lua luac lua.wasm ../out/
