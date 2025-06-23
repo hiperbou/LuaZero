@@ -9,6 +9,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install readline dev package
+        run: sudo apt-get update && sudo apt-get install -y libreadline-dev
+
       - name: Build Linux binaries
         run: |
           cd src
