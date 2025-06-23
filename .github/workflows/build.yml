@@ -1,0 +1,47 @@
+name: Build Lua Binaries
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Linux binaries
+        run: |
+          cd src
+          make linux
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lua-linux
+          path: |
+            src/lua
+            src/luac
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Build Windows binaries
+        run: |
+          cd src
+          make mingw
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lua-windows
+          path: |
+            src/lua.exe
+            src/luac.exe
